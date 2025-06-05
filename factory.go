@@ -10,8 +10,10 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
 
 	"github.com/acuvity/otelexporter/internal/metadata"
+	"github.com/golang-jwt/jwt/v5"
 
 	"go.acuvity.ai/a3s/pkgs/token"
 	"go.acuvity.ai/manipulate"
@@ -72,24 +74,49 @@ func newAcuvityExporter(ctx context.Context, cfg component.Config, _ *zap.Logger
 		return nil, fmt.Errorf("invalid config type: %T", cfg)
 	}
 
-	m, err := makeAPIManipulator(ctx, conf)
+	m, tokenName, err := makeAPIManipulator(ctx, conf)
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to backend: %w", err)
 	}
 
 	return &acuvityExporter{
-		m: m,
+		m:         m,
+		tokenName: tokenName,
 	}, nil
 }
 
 // makeAPIManipulator prepares a manipulate.Manipulator ready to use with the acuvity backend.
-func makeAPIManipulator(ctx context.Context, cfg *Config) (manipulate.Manipulator, error) {
+func makeAPIManipulator(ctx context.Context, cfg *Config) (manipulate.Manipulator, string, error) {
 
 	var identityToken *token.IdentityToken
 	var err error
 	identityToken, err = token.ParseUnverified(cfg.APIToken)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse API token: %w", err)
+		return nil, "", fmt.Errorf("unable to parse API token: %w", err)
+	}
+
+	// ensure that this is indeed an Acuvity token
+	if !slices.Equal(identityToken.Audience, jwt.ClaimStrings{"acuvity"}) {
+		return nil, "", fmt.Errorf("invalid API token audience: %s, expected ['acuvity']", identityToken.Audience)
+	}
+
+	// we check that this is an app token
+	cmap := identityToken.Map()
+	var apptoken bool
+	if v, ok := cmap["@apptoken"]; ok && len(v) > 0 {
+		apptoken = v[0] == "true"
+	}
+	if !apptoken {
+		return nil, "", fmt.Errorf("invalid API token: not an app token: '@apptoken=true' claim missing")
+	}
+
+	// and we check that it has a token name
+	var tokenName string
+	if v, ok := cmap["@apptoken:name"]; ok && len(v) > 0 {
+		tokenName = v[0]
+	}
+	if tokenName == "" {
+		return nil, "", fmt.Errorf("invalid API token: no app token name found in '@apptoken:name' claim")
 	}
 
 	// If we have no api url, we infer the API url and eventually namespace based on the api token.
@@ -102,7 +129,7 @@ func makeAPIManipulator(ctx context.Context, cfg *Config) (manipulate.Manipulato
 
 	systemCAPool, err := systemCAPool(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get systemCAPool: %w", err)
+		return nil, "", fmt.Errorf("unable to get systemCAPool: %w", err)
 	}
 
 	tlsConfig := &tls.Config{
@@ -128,10 +155,10 @@ func makeAPIManipulator(ctx context.Context, cfg *Config) (manipulate.Manipulato
 
 	m, err := maniphttp.New(ctx, cfg.APIURL, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create http manipulator: api-url:%s api-namespace:%s: %w", cfg.APIURL, cfg.APINamespace, err)
+		return nil, "", fmt.Errorf("unable to create http manipulator: api-url:%s api-namespace:%s: %w", cfg.APIURL, cfg.APINamespace, err)
 	}
 
-	return m, nil
+	return m, tokenName, nil
 }
 
 // SystemCAPool will return a ca pool either from the system pool

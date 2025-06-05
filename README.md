@@ -15,12 +15,9 @@ dist:
   output_path: ./otelcol-acuvity
 
 exporters:
-  - gomod:
-      go.opentelemetry.io/collector/exporter/otlpexporter v0.127.0
-  - gomod:
-      go.opentelemetry.io/collector/exporter/debugexporter v0.127.0
-  - gomod:
-      github.com/acuvity/otelexporter v0.1.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.127.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.127.0
+  - gomod: github.com/acuvity/otelexporter v0.1.0
 
 processors:
   - gomod:
@@ -41,3 +38,23 @@ providers:
 Then generate the sources by running: `ocb --config=builder-config.yaml`
 
 Your own generated OpenTelemetry Collector will then be available at `./otelcol-acuvity`
+
+## Development
+
+The above is conveniently prepared within a `builder-config.yaml` file which is in this repo which is perfect for development.
+Copy the `otel-config-template.yaml` to `otel-config.yaml` with a simple `cp otel-config{-template,}.yaml`.
+Then edit the `otel-config.yaml` to add your App Token to the configuration.
+
+For building the collector run:
+
+```shell
+make build
+```
+
+And for running the built collector using the `otel-config.yaml`, simply run:
+
+```shell
+make run
+```
+
+For more Makefile targets run `make help`.

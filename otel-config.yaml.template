@@ -1,0 +1,25 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:4317
+        tls:
+
+processors:
+  batch:
+
+exporters:
+  # just for making sure that we are receiving traces
+  debug:
+    verbosity: detailed
+  # The Acuvity traces exporter
+  acuvity:
+    # Use an Acuvity App Token that has either the OTelExporter role mapping applied
+    api_token: ""
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug, acuvity]

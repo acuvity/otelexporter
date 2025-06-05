@@ -16,12 +16,18 @@ import (
 
 // acuvityExporter is the implementation of file exporter that writes telemetry data to a file
 type acuvityExporter struct {
-	m manipulate.Manipulator
+	m         manipulate.Manipulator
+	tokenName string
 }
 
 func (e *acuvityExporter) consumeTraces(ctx context.Context, td ptrace.Traces) error {
 
 	it := api.NewIngestTrace()
+	it.Principal.Type = api.PrincipalTypeApp
+	it.Principal.AuthType = api.PrincipalAuthTypeAppToken
+	it.Principal.TokenName = e.tokenName
+	it.Principal.App = api.NewPrincipalApp()
+	it.Principal.App.Name = e.tokenName
 
 	for _, resourceSpans := range td.ResourceSpans().All() {
 		for _, scopeSpans := range resourceSpans.ScopeSpans().All() {
