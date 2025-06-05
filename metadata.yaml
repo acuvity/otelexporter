@@ -1,0 +1,26 @@
+type: acuvity
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces]
+  distributions: [contrib]
+  codeowners:
+    active: [mheese]
+    seeking_new: true
+
+tests:
+  config: # {} by default, specific testing configuration for lifecycle tests.
+  # Skip lifecycle tests for this component. Not recommended for components that are not in development.
+  skip_lifecycle: false # false by default
+  # Skip shutdown tests for this component. Not recommended for components that are not in development.
+  skip_shutdown: false # false by default
+  # Whether it's expected that the Consume[Logs|Metrics|Traces] method will return an error with the given configuration.
+  expect_consumer_error: false # false by default
+  goleak: # {} by default generates a package_test to enable check for leaks
+    skip: false # set to true if goleak tests should be skipped
+    #setup: string # Optional: supports configuring a setup function that runs before goleak checks
+    #teardown: string # Optional: supports configuring a teardown function that runs before goleak checks
+    ignore:
+      #top: [string] # Optional: array of strings representing functions that should be ignore via IgnoreTopFunction
+      #any: [string] # Optional: array of strings representing functions that should be ignore via IgnoreAnyFunction
