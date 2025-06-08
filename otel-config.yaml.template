@@ -14,7 +14,7 @@ exporters:
     verbosity: detailed
   # The Acuvity traces exporter
   acuvity:
-    # Use an Acuvity App Token that has either the OTelExporter role mapping applied
+    # Use an Acuvity App Token that has the OpenTelmetryCollector role applied
     api_token: ""
 
 service:
