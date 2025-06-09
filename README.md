@@ -57,4 +57,10 @@ And for running the built collector using the `otel-config.yaml`, simply run:
 make run
 ```
 
+You can then generate traces and feed it into the collector by running:
+
+```shell
+make generate-traces
+```
+
 For more Makefile targets run `make help`.
